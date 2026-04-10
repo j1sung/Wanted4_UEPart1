@@ -2,17 +2,18 @@
 
 
 #include "Teacher.h"
+#include "Card.h"
 
 UTeacher::UTeacher()
 {
 	Name = TEXT("안지성");
 	Year = 5;
-	Id = 3;
+	Card->SetCardType(ECardType::Teacher);
 }
 
 void UTeacher::DoLesson()
 {
-	Super::DoLesson();
+	ILessonInterface::DoLesson();
 
 	UE_LOG(
 		LogTemp,
