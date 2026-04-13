@@ -101,6 +101,27 @@ void UMyGameInstance::Init()
 		Sum, SumByAlgo, (Sum == SumByAlgo ? TEXT("True") : TEXT("False"))
 	);
 
+	// TSet 사용.
+	TSet<int32> Int32Set;
+	for (int32 ix = 1; ix <= ArrayNum; ++ix)
+	{
+		Int32Set.Add(ix);
+	}
+
+	// 제거. -> set은 이전처럼 for문으로 람다로 못지움
+	Int32Set.Remove(2);
+	Int32Set.Remove(4);
+	Int32Set.Remove(6);
+	Int32Set.Remove(8);
+	Int32Set.Remove(10);
+
+	// 추가
+	Int32Set.Add(2);
+	Int32Set.Add(4);
+	Int32Set.Add(6);
+	Int32Set.Add(8);
+	Int32Set.Add(10);
+
 	/*
 	// TArray는 언리얼 엔진이 지원하는 동적 배열
 	// STL의 std::vector와 동일한 기능 제공.
