@@ -6,6 +6,7 @@
 #include "Teacher.h"
 #include "Staff.h"
 #include "Card.h"
+#include "CourseInfo.h" // 전방선언 했으니
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -19,6 +20,31 @@ void UMyGameInstance::Init()
 	
 	UE_LOG(LogTemp, Log, TEXT("========================"));
 
+	// 학사 정보 객체 생성.
+	CourseInfo = NewObject<UCourseInfo>(this); // outer 지정 this 추가(런타임 지정이라 필요시)
+
+	// 3명 학생 추가.
+	UStudent* Student1 = NewObject<UStudent>();
+	Student1->SetName(TEXT("학생1"));
+
+	UStudent* Student2 = NewObject<UStudent>();
+	Student2->SetName(TEXT("학생2"));
+
+	UStudent* Student3 = NewObject<UStudent>();
+	Student3->SetName(TEXT("학생3"));
+
+	// 알림에 구독.
+	CourseInfo->OnChanged.AddUObject(Student1, &UStudent::GetNotification);
+	CourseInfo->OnChanged.AddUObject(Student2, &UStudent::GetNotification);
+	CourseInfo->OnChanged.AddUObject(Student3, &UStudent::GetNotification);
+
+	// 변경된 학사 정보 발행.
+	CourseInfo->ChangeCourseInfo(SchoolName, TEXT("변경된 학사 정보"));
+
+	UE_LOG(LogTemp, Log, TEXT("========================"));
+
+
+	/*
 	// TArray는 언리얼 엔진이 지원하는 동적 배열
 	// STL의 std::vector와 동일한 기능 제공.
 	// 언리얼 오브젝트에 특화된 동적 배열.
@@ -66,11 +92,11 @@ void UMyGameInstance::Init()
 		// 어서트.
 		ensureAlways(OwnCard); // OwnCard값이 null이면 안된다.
 
-		/*UE_LOG(
-			LogTemp, Log, TEXT("%s님이 소유한 카드 종류: %d"),
-			*Person->GetName(),
-			OwnCard->GetCardType()
-		);*/
+		//*UE_LOG(
+		//	LogTemp, Log, TEXT("%s님이 소유한 카드 종류: %d"),
+		//	*Person->GetName(),
+		//	OwnCard->GetCardType()
+		//);
 
 		// 열거형의 문자열 값 가져오기.
 		const UEnum* CardEnumType = FindObject<UEnum>(nullptr, 
@@ -91,7 +117,7 @@ void UMyGameInstance::Init()
 			);
 		}
 	}
-
+	*/
 
 	/*
 	// 클래스 정보 가져오기.

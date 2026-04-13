@@ -21,4 +21,8 @@ private:
 	// 학교 이름 변수
 	UPROPERTY()
 	FString SchoolName;
+
+	// 학사 정보 객체.
+	UPROPERTY()
+	TObjectPtr<class UCourseInfo> CourseInfo;
 };
