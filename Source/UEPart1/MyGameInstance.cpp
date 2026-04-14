@@ -2,373 +2,167 @@
 
 
 #include "MyGameInstance.h"
-#include "Student.h"
-#include "Teacher.h"
-#include "Staff.h"
-#include "Card.h"
-#include "CourseInfo.h" // 전방선언 했으니
-#include "Algo/Accumulate.h"
 
-UMyGameInstance::UMyGameInstance()
+// 이름 자동완성 해주는 함수.
+FString MakeRandomName()
 {
-	// 기본 값은 CDO라는 특별한 템플릿 객체에 저장됨.
-	SchoolName = TEXT("기본학교");
+	// 3글자.
+	TCHAR FirstChar[] = TEXT("김이박최");
+	TCHAR MiddleChar[] = TEXT("상혜지성");
+	TCHAR LastChar[] = TEXT("수은원연");
+
+	// 동적 배열을 사용할 때 가능하다면 재할당을 방지하는게 좋음.
+	TArray<TCHAR> RandArray;
+	RandArray.SetNum(3);
+	RandArray[0] = FirstChar[FMath::RandRange(0, 3)];
+	RandArray[1] = MiddleChar[FMath::RandRange(0, 3)];
+	RandArray[2] = LastChar[FMath::RandRange(0, 3)];
+
+	// 문자열로 변환이 가능하도록 반환.
+	return RandArray.GetData();
 }
 
 void UMyGameInstance::Init()
 {
 	Super::Init();
-	
-	UE_LOG(LogTemp, Log, TEXT("========================"));
 
-	// 학사 정보 객체 생성.
-	CourseInfo = NewObject<UCourseInfo>(this); // outer 지정 this 추가(런타임 지정이라 필요시)
-
-	// 3명 학생 추가.
-	UStudent* Student1 = NewObject<UStudent>();
-	Student1->SetName(TEXT("학생1"));
-
-	UStudent* Student2 = NewObject<UStudent>();
-	Student2->SetName(TEXT("학생2"));
-
-	UStudent* Student3 = NewObject<UStudent>();
-	Student3->SetName(TEXT("학생3"));
-
-	// 알림에 구독.
-	CourseInfo->OnChanged.AddUObject(Student1, &UStudent::GetNotification);
-	CourseInfo->OnChanged.AddUObject(Student2, &UStudent::GetNotification);
-	CourseInfo->OnChanged.AddUObject(Student3, &UStudent::GetNotification);
-
-	// 변경된 학사 정보 발행.
-	CourseInfo->ChangeCourseInfo(SchoolName, TEXT("변경된 학사 정보"));
-
-	UE_LOG(LogTemp, Log, TEXT("========================"));
-
-	// TArray  사용.
-	const int32 ArrayNum = 10;
-	TArray<int32> Int32Array;
-
-	for (int32 ix = 1; ix <= ArrayNum; ++ix)
+	// 학생 이름 데이터 생성.
+	const int32 StudentNum = 300;
+	for (int32 ix = 1; ix <= StudentNum; ++ix)
 	{
-		Int32Array.Add(ix);
+		StudentsData.Emplace(FStudentData(MakeRandomName(), ix));
 	}
 
-	// 짝수 제거.
-	Int32Array.RemoveAll(
-		// [] - 캡처 (외부 내용을 람다 안에서 사용할 때 활용).
-		// () - 파라미터.
-		// -> - 반환형.
-		// { } - 본문
-		[](int32 Val) -> bool
+	// 구조체 TArray 배열
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("모든 학생 이름의 수: %d"),
+		StudentsData.Num()
+	);
+
+	// 학생 데이터에서 이름 값만 추출해서 배열에 저장.
+	TArray<FString> AllStudentNames;
+
+	// 알고리즘을 활용해서 이름 값 추출.
+	Algo::Transform(StudentsData, AllStudentNames,
+		[](const FStudentData& Val)
 		{
-			return Val % 2 == 0;
+			return Val.Name;
 		}
 	);
-
-	// 짝수 삽입.
-	Int32Array += {2, 4, 6, 8, 10};
-
-	// 비교 ( 동등 비교 ).
-	TArray<int32> Int32ArrayCompare;
-	int32 CArray[] = { 1, 3, 5, 7, 9, 2, 4, 6, 8, 10 };
-	Int32ArrayCompare.AddUninitialized(ArrayNum);
-	
-	// C 스타일 배열을 TArray에 메모리 복사.
-	FMemory::Memcpy(
-		Int32ArrayCompare.GetData(),
-		CArray,
-		sizeof(int32) * ArrayNum
-	);
-
-	// 어서트 (크래시를 발생시키지 않고, 출력 로그 창에 오류 메시지 출력).
-	ensureAlways(Int32Array == Int32ArrayCompare);
-
-	// 합계.
-	int32 Sum = 0;
-	for (const int32& Int32Num : Int32Array)
-	{
-		Sum += Int32Num;
-	}
-
-	// 알고리즘 활용 (합계 구하기).
-	int32 SumByAlgo = Algo::Accumulate(Int32Array, 0);
-	ensureAlways(Sum == SumByAlgo);
 
 	UE_LOG(
 		LogTemp,
 		Log,
-		TEXT("Sum = %d | SumByAlgo: %d | Sum == SumByAlgo: %s"),
-		Sum, SumByAlgo, (Sum == SumByAlgo ? TEXT("True") : TEXT("False"))
+		TEXT("모든 학생 이름의 수: %d"),
+		AllStudentNames.Num()
 	);
 
-	// TSet 사용.
-	TSet<int32> Int32Set;
-	for (int32 ix = 1; ix <= ArrayNum; ++ix)
-	{
-		Int32Set.Add(ix);
-	}
-
-	// 제거. -> set은 이전처럼 for문으로 람다로 못지움
-	Int32Set.Remove(2);
-	Int32Set.Remove(4);
-	Int32Set.Remove(6);
-	Int32Set.Remove(8);
-	Int32Set.Remove(10);
-
-	// 추가
-	Int32Set.Add(2);
-	Int32Set.Add(4);
-	Int32Set.Add(6);
-	Int32Set.Add(8);
-	Int32Set.Add(10);
-
-	/*
-	// TArray는 언리얼 엔진이 지원하는 동적 배열
-	// STL의 std::vector와 동일한 기능 제공.
-	// 언리얼 오브젝트에 특화된 동적 배열.
-	TArray<UPerson*> Persons =
-	{ 
-		NewObject<UStudent>(),
-		NewObject<UTeacher>(),
-		NewObject<UStaff>()
-	};
-
-	// 이름 출력.
-	for (const UPerson* Person : Persons)
-	{
-		UE_LOG(LogTemp, Log, TEXT("구성원 이름: %s"), *Person->GetName());
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("========================"));
-
-	for (UPerson* Person : Persons)
-	{
-		// 인터페이스로 형변환. -> 인터페이스가 없으면 else로 빠지게
-		// 다운 캐스팅 (위험한 형변환 - RTTI 고려해야 함).
-		ILessonInterface* LessonInterface
-			= Cast<ILessonInterface>(Person); // 빠른 형변환
-		if (LessonInterface)
+	// 학생 데이터를 TSet으로 변환.
+	TSet<FString> AllUniqueNames;
+	Algo::Transform(
+		StudentsData,
+		AllUniqueNames,
+		[](const FStudentData& Val)
 		{
-			UE_LOG(LogTemp, Log, TEXT("%s님은 수업에 참여할 수 있습니다."),
-				*Person->GetName()
-			);
-			LessonInterface->DoLesson();
+			return Val.Name;
 		}
-		else 
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s님은 수업에 참여할 수 없습니다."),
-				*Person->GetName()
-			);
-		}
-	}
-	UE_LOG(LogTemp, Log, TEXT("========================"));
-
-	for (const auto Person : Persons)
-	{
-		// 카드 가져오기.
-		const UCard* OwnCard = Person->GetCard();
-		// 어서트.
-		ensureAlways(OwnCard); // OwnCard값이 null이면 안된다.
-
-		//*UE_LOG(
-		//	LogTemp, Log, TEXT("%s님이 소유한 카드 종류: %d"),
-		//	*Person->GetName(),
-		//	OwnCard->GetCardType()
-		//);
-
-		// 열거형의 문자열 값 가져오기.
-		const UEnum* CardEnumType = FindObject<UEnum>(nullptr, 
-				TEXT("/Script/UEPart1.ECardType")
-			);
-
-		if (CardEnumType)
-		{
-			FString CardMetaData = CardEnumType->GetDisplayNameTextByValue(
-				(int64)OwnCard->GetCardType()
-			).ToString();
-
-			UE_LOG(
-				LogTemp,
-				Log,
-				TEXT("%s님이 소유한 카드 종류 %s"),
-				*Person->GetName(), *CardMetaData
-			);
-		}
-	}
-	*/
-
-	/*
-	// 클래스 정보 가져오기.
-	UClass* ClassRuntime = GetClass();
-	UClass* ClassCompile = UMyGameInstance::StaticClass();
-
-	// 어서트.
-	// check(ClassRuntime != ClassCompile); // 크래시까지 발생시키는 어써트.
-	// ensure(ClassRuntime == ClassCompile); // 출력 로그 창에 오류 표시. 한번만.
-	// ensureAlways() // 실행에서 반복적
-
-	// 클래스 이름 출력.
-	UE_LOG(
-		LogTemp, 
-		Log, 
-		TEXT("학교를 담당하는 클래스: %s, %s"),
-		*ClassRuntime->GetName(),
-		*ClassCompile->GetName()
 	);
 
-	SchoolName = TEXT("청강문화산업대학교");
+	// 중복을 제거해서 출력
 	UE_LOG(
 		LogTemp,
 		Log,
-		TEXT("학교 이름: %s"),
-		*SchoolName
+		TEXT("중복 없는 학생 이름의 수: %d"),
+		AllUniqueNames.Num()
 	);
+
+	// 학생 데이터를 TMap으로 변환.
+	Algo::Transform(
+		StudentsData,
+		StudentsMap,
+		[](const FStudentData& Val)
+		{
+			return TPair<int32, FString>(
+				Val.Order, Val.Name
+			);
+		}
+	);
+
+
 	UE_LOG(
 		LogTemp,
 		Log,
-		TEXT("학교 이름: %s"),
-		*GetClass()->GetDefaultObject<UMyGameInstance>()->SchoolName
-	);
-	// 둘의 값이 다름 -> CDO와 런타임 변수 값이 다름
-
-	UE_LOG(LogTemp, Log, TEXT("====================="));
-
-	// 학생/선생님 객체 생성.
-	UStudent* Student = NewObject<UStudent>();
-	UTeacher* Teacher = NewObject<UTeacher>();
-
-	// 학생 클래스의 Getter/Setter 사용.
-	Student->SetName(TEXT("학생1"));
-	UE_LOG(LogTemp, Log, TEXT("새로운 학생 이름: %s"), *Student->GetName());
-
-	// 언리얼의 리플렉션을 활용해 프로퍼티 정보 설정 및 가져오기.
-	
-	//UTeacher::StaticClass()->FindPropertyByName(TEXT("Name"));
-	FProperty* NameProp = 
-		Teacher->GetClass()->FindPropertyByName(TEXT("Name"));
-	if (NameProp)
-	{
-		// 리플렉션을 활용해 현재 프로퍼티에 저장된 값 가져오기.
-		FString CurrentTeacherName;
-		NameProp->GetValue_InContainer(Teacher, &CurrentTeacherName);
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("현재 선생님 이름: %s"),
-			*CurrentTeacherName
-		);
-
-		// 리플렉션을 활용해 프로퍼티에 새로운 값 저장.
-		FString NewTeacherName = (TEXT("지성"));
-		NameProp->SetValue_InContainer(Teacher, &NewTeacherName);
-		UE_LOG(
-			LogTemp,
-			Log,
-			TEXT("현재 선생님 이름: %s"),
-			*Teacher->GetName()
-		);
-	}
-
-	// 함수 호출 (리플렉션 활용).
-	UFunction* DoLessonFunc 
-		= Teacher->GetClass()->FindFunctionByName(TEXT("DoLesson"));
-
-	if (DoLessonFunc)
-	{
-		Teacher->ProcessEvent(DoLessonFunc, nullptr);
-	}*/
-
-	/*
-	// 로그 출력.
-	UE_LOG(LogTemp, Log, TEXT("%s"), TEXT("Hello Unreal"));
-	// L"%s"랑 같은 widechar로 변환 - 16비트 2
-	// TEXT매크로가 ##으로 이어 붙여주는 
-
-	// TCHAR | FString.
-	// TCHAR = wchar_t
-	TCHAR LogCharArray[] = TEXT("Hello Unreal");  // L 붙여주는거랑 똑같다.
-	// UE_LOG 함수.
-	// 1. Log 카테고리(타입).
-	// 2. 로그 수준(Log, Warning, Error).
-	// 3. 포맷 (format, 서식) - 출력할 값의 타입.
-	// 가변 인자: 포맷에 지정한 타입에 알맞은 값을 전달.
-	UE_LOG(LogTemp, Log, TEXT("%s"), LogCharArray);
-
-	FString LogCharString = LogCharArray;
-	//UE_LOG(LogTemp, Log, TEXT("%s"), LogCharString);
-	// FString은 앞에 *연산자를 붙여야함 -> 연산자 오버로딩(operator) 사용됨
-	UE_LOG(LogTemp, Log, TEXT("%s"), *LogCharString);
-
-	// FString에서 TCHAR 포인터를 가져오는 방법.
-	const TCHAR* LogCharPtr = *LogCharString;
-	TCHAR* LogCharDataPtr = LogCharString.GetCharArray().GetData();
-
-	// 문자열 복사.
-	TCHAR LogCharArrayWithSize[100] = {};
-	FCString::Strcpy(
-		LogCharArrayWithSize, 
-		LogCharString.Len(),
-		*LogCharString
+		TEXT("순번에 따른 학생 맵의 데이터 수: %d"),
+		StudentsMap.Num()
 	);
 
-	// 복사된 문자열 출력.
-	UE_LOG(LogTemp, Log, TEXT("%s"), LogCharArrayWithSize);
+	// 이름 값을 키로하는 맵.
+	TMap<FString, int32> StudentsMapByUniqueName;
 
-	// 문자열 자르기.
-	if (LogCharString.Contains(TEXT("unreal"), ESearchCase::IgnoreCase))
+	// 학생 데이터를 Map으로 변환.
+	Algo::Transform(
+		StudentsData,
+		StudentsMapByUniqueName,
+		[](const FStudentData& Val)
+		{
+			return TPair<FString, int32>(
+				Val.Name, Val.Order
+			);
+		}
+	);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("이름에 따른 학생 맵의 데이터 수: %d"),
+		StudentsMapByUniqueName.Num()
+	);
+
+	// 이름 중복을 허용하려는 경우.
+	TMultiMap<FString, int32> StudentsMapByName;
+	Algo::Transform(
+		StudentsData,
+		StudentsMapByName,
+		[](const FStudentData& Val) -> TPair<FString, int32> // 반환값 명시 지정
+		{
+			return TPair<FString, int32>(
+				Val.Name, Val.Order
+			);
+		}
+	);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("이름에 따른 학생 멀티맵의 데이터 수: %d"),
+		StudentsMapByName.Num()
+	);
+
+	// 검색.
+	const FString TargetName(TEXT("이혜은"));
+	TArray<int32> AllOrders;
+	StudentsMapByName.MultiFind(TargetName, AllOrders);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("이름이 %s인 학생 수: %d"),
+		*TargetName, AllOrders.Num()
+	);
+
+	// TSet에 구조체 넣어보기.
+	TSet<FStudentData> StudentsSet;
+	for (int32 ix = 1; ix <= StudentNum; ++ix)
 	{
-		// 시작 문자열 검색.
-		int32 Index 
-			= LogCharString.Find(TEXT("unreal"), ESearchCase::IgnoreCase);
-
-		FString EndString = LogCharString.Mid(Index);
-
-		UE_LOG(LogTemp, Log, TEXT("EndString: %s"), *EndString);
+		StudentsSet.Emplace(FStudentData(MakeRandomName(), ix));
 	}
 
-	// 문자열 나누기.
-	FString Left, Right;
-	if (LogCharString.Split(TEXT(" "), &Left, &Right))
-	{
-		UE_LOG(LogTemp, Log, TEXT("split Result: %s 와 %s"), *Left, *Right);
-	}
-
-	// 변환 함수.
-	int32 IntValue = 32;
-	float FloatValue = 3.141592f;
-
-	FString FloatIntString
-		= FString::Printf(TEXT("Int: %d, Float: %f"), IntValue, FloatValue);
-
-	FString FloatString = FString::SanitizeFloat(FloatValue);
-	FString IntString = FString::FromInt(IntValue);
-
-	UE_LOG(LogTemp, Log, TEXT("%s"), *FloatIntString);
-	UE_LOG(LogTemp, Log, TEXT("Int: %s, Float: %s"), *IntString, *FloatString);
-
-	// 문자열에서 숫자로 변환.
-	int32 IntValueFromString = FCString::Atoi(*IntString);
-	float FloatValueFromString = FCString::Atof(*FloatString);
-
-	UE_LOG(LogTemp, Log, TEXT("Int: %d, Float: %f"), 
-		IntValueFromString, FloatValueFromString);
-
-	// FNAME 사용.
-	FName Key1(TEXT("PELVIS"));
-	FName Key2(TEXT("pelvis"));
-
-	// 비교 결과.
-	FString Result = Key1 == Key2 ? TEXT("같음") : TEXT("다름");
-	UE_LOG(LogTemp, Log, TEXT("FName 비교 결과: %s"), *Result);
-	
-	// 부하가 큰 경우.
-	for (int ix = 0; ix < 10000; ++ix)
-	{
-		// 키 값.
-		// FName SearchInNamePool = FName(TEXT("pelvis")); 이렇게 하지 말자
-
-		const static FName SearchInNamePool = FName(TEXT("pelvis"));
-		// 읽기 전용이면 const를 잘 쓰자
-
-	}*/
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("학생 데이터 셋의 수: %d"),
+		StudentsSet.Num()
+	);
 }
