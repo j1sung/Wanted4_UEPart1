@@ -1,11 +1,14 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
-#include "StudentData.h"
 #include "MyGameInstance.generated.h"
+
+// Àü¹æ ¼±¾ğ.
+class UStudent;
+class FStudentManager;
 
 /**
  * 
@@ -15,17 +18,23 @@ class UEPART1_API UMyGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 	
-public:
+protected:
 	virtual void Init() override;
 
+	// Á¾·áÇÒ ¶§ Á¤¸® ÀÛ¾÷¿ëÀ¸·Î »ç¿ë.
+	virtual void Shutdown() override;
+
 private:
-	// êµ¬ì¡°ì²´ì˜ ê²½ìš°, ìŠ¤íƒ ë©”ëª¨ë¦¬(í•­ìƒì€ ì•„ë‹˜)ì—ì„œ ê´€ë¦¬.
-	TArray<FStudentData> StudentsData;
+	TObjectPtr<UStudent> NonPropStudent;
 
-	// UObjectì˜ ê²½ìš° í™ì— ë°°ì¹˜ ë° ê´€ë¦¬ë¨.
-	// TArrayì—ì„œ UObject íƒ€ì…ì„ ì‚¬ìš©í•  ë•ŒëŠ” UPROPERTY í•„ìˆ˜.
 	UPROPERTY()
-	TArray<TObjectPtr<class UStudent>> Students;
+	TObjectPtr<UStudent> PropStudent;
 
-	TMap<int32, FString> StudentsMap;
+	TArray<TObjectPtr<UStudent>> NonPropStudents;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UStudent>> PropStudents;
+
+	FStudentManager* StudentManager = nullptr;
+
 };
