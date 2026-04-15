@@ -6,10 +6,6 @@
 #include "Engine/GameInstance.h"
 #include "MyGameInstance.generated.h"
 
-// 전방 선언.
-class UStudent;
-class FStudentManager;
-
 /**
  * 
  */
@@ -17,24 +13,14 @@ UCLASS()
 class UEPART1_API UMyGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
-	
+
+public:
+	UMyGameInstance();
+
 protected:
 	virtual void Init() override;
-
-	// 종료할 때 정리 작업용으로 사용.
-	virtual void Shutdown() override;
-
+	
 private:
-	TObjectPtr<UStudent> NonPropStudent;
-
 	UPROPERTY()
-	TObjectPtr<UStudent> PropStudent;
-
-	TArray<TObjectPtr<UStudent>> NonPropStudents;
-
-	UPROPERTY()
-	TArray<TObjectPtr<UStudent>> PropStudents;
-
-	FStudentManager* StudentManager = nullptr;
-
+	TObjectPtr<class UStudent> StudentSource; // 전방선언
 };
