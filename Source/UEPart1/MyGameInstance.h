@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,8 +19,24 @@ public:
 
 protected:
 	virtual void Init() override;
+
+	// 패키지 저장 함수.
+	void SaveStudentPackage() const;
+
+	// 패키지 로드 함수.
+	void LoadStudentPackage() const;
+
+	// 경로 기반 언리얼 오브젝트를 로드하는 함수.
+	void LoadStudentObject() const;
 	
 private:
+
+	// 패키지 이름.
+	static const FString PackageName;
+
+	// 에셋 이름.
+	static const FString AssetName;
+
 	UPROPERTY()
-	TObjectPtr<class UStudent> StudentSource; // ���漱��
+	TObjectPtr<class UStudent> StudentSource; // 전방선언
 };

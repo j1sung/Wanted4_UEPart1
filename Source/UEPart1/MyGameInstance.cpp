@@ -5,7 +5,28 @@
 #include "StudentData.h"
 #include "Student.h"
 #include "JsonObjectConverter.h"
+#include "UObject/SavePackage.h"
 
+// static 변수 초기화.
+// /Game -> 프로젝트 경로/Content 경로를 가리킴.
+const FString UMyGameInstance::PackageName = TEXT("/Game/Student");
+const FString UMyGameInstance::AssetName = TEXT("Student");
+
+// UStudent 출력용 함수.
+void PrintStudentInfo(
+	const UStudent* InStudent,
+	const FString& InTag)
+{
+	// 출력.
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("[%s] 이름: %s, 순번: %d"),
+		*InTag,
+		*InStudent->GetName(),
+		InStudent->GetOrder()
+	);
+}
 
 UMyGameInstance::UMyGameInstance()
 {
@@ -240,16 +261,162 @@ void UMyGameInstance::Init()
 				UStudent::StaticClass(),
 				JsonStudentDest))
 			{
-				// 출력.
-				UE_LOG(
-					LogTemp,
-					Log,
-					TEXT("[JsonData] 이름: %s, 순번: %d"),
-					*JsonStudentDest->GetName(),
-					JsonStudentDest->GetOrder()
-				);
-
+				//// 출력.
+				//UE_LOG(
+				//	LogTemp,
+				//	Log,
+				//	TEXT("[JsonData] 이름: %s, 순번: %d"),
+				//	*JsonStudentDest->GetName(),
+				//	JsonStudentDest->GetOrder()
+				//);
+				PrintStudentInfo(JsonStudentDest, TEXT("JsonData"));
 			}
 		}
+	}
+
+	// 패키지 저장 함수 실행(호출).
+	//SaveStudentPackage();
+
+	// 패키지 로드 함수 실행
+	//LoadStudentPackage();
+
+	// 경로 값을 사용해 오브젝트를 로드하는 함수 실행.
+	LoadStudentObject();
+}
+
+void UMyGameInstance::SaveStudentPackage() const
+{
+	// 예외 처리(이미 만들어졌는데 또 실행해서 만들면 안되니까)
+	UPackage* StudentPackage = LoadPackage(nullptr, *PackageName, LOAD_None);
+	// 패키지가 이미 있다면, 에셋을 완전히 처리.
+	if (StudentPackage)
+	{
+		StudentPackage->FullyLoad();
+	}
+
+	// 패키지 생성.
+	StudentPackage = CreatePackage(*PackageName);
+	// 패키지에 사용할 플래그 지정.
+	// RF_Public | RF_Standalone 플래그 값이 가장 일반적
+	EObjectFlags ObjectFlag = RF_Public | RF_Standalone;
+
+	// 패키지에 저장할 언리얼 오브젝트 생성.
+	UStudent* Student = NewObject<UStudent>(
+		StudentPackage,
+		UStudent::StaticClass(),
+		*AssetName,
+		ObjectFlag
+	);
+	Student->SetName(TEXT("안지성"));
+	Student->SetOrder(11);
+
+	// 서브 오브젝트 추가.
+	const int32 SubObjectCount = 10;
+	for (int32 ix = 1; ix <= SubObjectCount; ++ix)
+	{
+		// 생성할 객체의 이름.
+		FString SubObjectName
+			= FString::Printf(TEXT("Student%d"), ix);
+
+		// 객체 생성.
+		UStudent* SubStudent
+			= NewObject<UStudent>(
+				Student,
+				UStudent::StaticClass(),
+				*SubObjectName,
+				ObjectFlag
+			);
+
+		// 값 설정.
+		SubStudent->SetName(FString::Printf(TEXT("학생%d"), ix));
+		SubStudent->SetOrder(ix);
+	}
+
+	// 패키지 저장.
+	FString PackageFileName
+		= FPackageName::LongPackageNameToFilename(
+			PackageName, FPackageName::GetAssetPackageExtension()
+		);
+
+	// 참고로.. 이렇게도 가능.
+	/*FString PackageFileName2
+		= FPaths::Combine(
+			FPlatformMisc::ProjectDir(),
+			TEXT("Content"),
+			FString::Printf(TEXT("%s%s"),
+				*PackageName, 
+				*FPackageName::GetAssetPackageExtension())
+			);*/
+
+	// 경로 값 정리.
+	FPaths::MakeStandardFilename(PackageFileName);
+
+	// 저장할 옵션 설정.
+	FSavePackageArgs SaveArgs;
+	SaveArgs.TopLevelFlags = ObjectFlag;
+
+	// 패키지 저장.
+	if (UPackage::SavePackage(
+		StudentPackage,
+		nullptr,
+		*PackageFileName,
+		SaveArgs))
+	{
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("패키지가 성공적으로 저장되었습니다.")
+		);
+	}
+	
+}
+
+void UMyGameInstance::LoadStudentPackage() const
+{
+	// 패키지 로드.
+	UPackage* StudentPackage 
+		= LoadPackage(nullptr, *PackageName, LOAD_None);
+	// 패키지 로드 실패 처리
+	if (!StudentPackage)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("패키지를 찾을 수 없습니다.")
+		);
+		return;
+	}
+
+	// 완전히 로드되도록 함수 실행.
+	StudentPackage->FullyLoad();
+
+	// 패키지 안에 있는 언리얼 오브젝트(에셋) 검색.
+	UStudent* Student 
+		= FindObject<UStudent>(StudentPackage, *AssetName);
+
+	if (Student)
+	{
+		// 로드한 결과 출력.
+		PrintStudentInfo(Student, TEXT("FindObject Asset"));
+	}
+}
+
+void UMyGameInstance::LoadStudentObject() const
+{
+	// 오브젝트 경로 값.
+	const FString SoftObjectPath
+		= FString::Printf(TEXT("%s.%s"),
+			*PackageName, *AssetName
+		);
+
+	// 오브젝트 로드.
+	UStudent* Student 
+		= LoadObject<UStudent>(nullptr, *SoftObjectPath);
+	if (Student)
+	{
+		// 로드한 오브젝트 정보 출력.
+		PrintStudentInfo(
+			Student, TEXT("LoadObject Asset")
+		);
 	}
 }
