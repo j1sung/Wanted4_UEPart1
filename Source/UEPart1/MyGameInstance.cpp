@@ -281,7 +281,40 @@ void UMyGameInstance::Init()
 	//LoadStudentPackage();
 
 	// 경로 값을 사용해 오브젝트를 로드하는 함수 실행.
-	LoadStudentObject();
+	//LoadStudentObject();
+
+	// 에셋 스트리밍 관리자를 통한 에셋 로드.
+	// 경로 값.
+	const FString SoftObjectPath 
+		= FString::Printf(TEXT("%s.%s"),
+		*PackageName, *AssetName
+		);
+	
+	// 비동기 로드.
+	Handle = StreamableManager.RequestAsyncLoad(
+		SoftObjectPath,
+		[&]()
+		{
+			// 로드가 문제없이 완료됐는지 확인.
+			if (Handle.IsValid() && Handle->HasLoadCompleted())
+			{
+				// 핸들로부터 언리얼 오브젝트 가져오기.
+				UStudent* Student 
+					= Cast<UStudent>(Handle->GetLoadedAsset());
+				if (Student)
+				{
+					PrintStudentInfo(
+						Student,
+						TEXT("AsyncLoad")
+					);
+
+					// 핸들 해제.
+					Handle->ReleaseHandle();
+					Handle.Reset();
+				}
+			}
+		}
+	);
 }
 
 void UMyGameInstance::SaveStudentPackage() const

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Engine/StreamableManager.h"
 #include "MyGameInstance.generated.h"
 
 /**
@@ -39,4 +40,10 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<class UStudent> StudentSource; // 전방선언
+
+	// 에셋 로드에 사용할 관리자.
+	FStreamableManager StreamableManager;
+
+	// 에셋을 스트리밍 방식으로 처리할 때 필요한 핸들.
+	TSharedPtr<FStreamableHandle> Handle;
 };
